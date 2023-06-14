@@ -1,0 +1,10 @@
+extra2:
+  gzip2: true
+connection:
+  old:
+    # uri: mongodb://localhost/?authSource=admin
+    host: 127.0.0.1
+    port: 27017
+    username: user
+    password: pass
+    authdb: admin

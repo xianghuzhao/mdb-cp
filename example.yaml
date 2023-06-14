@@ -1,0 +1,49 @@
+include:
+- example-inc.yaml
+#- example-inc2.yaml
+
+connection:
+  old:
+    # uri: mongodb://localhost/?authSource=admin
+    host: localhost
+    port: 27017
+    username: user
+    password: pass
+    authdb: admin
+
+extra:
+  gzip2: false
+
+copy:
+- mode: db
+  from:
+    conn: old
+    db: db_old
+  to:
+    conn: new
+    db: db_new
+  exclude_col:
+  - temp1
+  - temp2
+  exclude_col_prefix:
+  - abc_
+  - def_
+- mode: cols
+  from:
+    conn: old
+    db: db_old
+  to:
+    conn: new
+    db: db_new
+  col:
+  - col_new_1: col1
+  - col2
+- mode: ns
+  from:
+    conn: old
+    db: db_same
+  to:
+    conn: new
+#  ns_include: 'data.*'
+  ns_from: 'data.$prefix$_$customer$'
+  ns_to: '$customer$.$prefix$'
