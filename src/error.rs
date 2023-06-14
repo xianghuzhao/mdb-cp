@@ -2,7 +2,6 @@ use std::fmt;
 
 use super::config;
 
-#[derive(Debug)]
 pub enum Error {
     ConfigError(config::error::Error),
 }

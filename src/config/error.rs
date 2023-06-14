@@ -1,6 +1,5 @@
 use std::fmt;
 
-#[derive(Debug)]
 pub struct Error {
     file_path: String,
     message: String,

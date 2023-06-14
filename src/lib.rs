@@ -1,3 +1,4 @@
+mod arg;
 mod config;
 pub mod error;
 
@@ -5,9 +6,13 @@ use config::Config;
 use error::Error;
 
 pub fn run() -> Result<(), Error> {
-    let cfg = Config::load("example.yaml")?;
+    let args = arg::parse_arg();
+
+    let cfg = Config::load(&args.config)?;
 
     println!("{:#?}", cfg);
+
+    println!("{}, {}", args.config, args.yes);
 
     Ok(())
 }
