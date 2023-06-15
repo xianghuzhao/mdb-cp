@@ -8,15 +8,21 @@ use serde_yaml::Value;
 
 pub mod error;
 
+const MONGODUMP_CMD: &str = "mongodump";
+const MONGORESTORE_CMD: &str = "mongorestore";
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-struct Extra {
+pub struct Extra {
     gzip: bool,
+    yes: bool,
+    dump: String,
+    restore: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-struct Connection {
+pub struct Connection {
     uri: String,
     host: String,
     port: u16,
@@ -27,14 +33,14 @@ struct Connection {
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-struct DBParam {
+pub struct DBParam {
     conn: String,
     db: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-struct CopyModeDB {
+pub struct CopyModeDB {
     from: DBParam,
     to: DBParam,
     exclude_col: Vec<String>,
@@ -43,14 +49,14 @@ struct CopyModeDB {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
-enum ColPair {
+pub enum ColPair {
     Map(HashMap<String, String>),
     Str(String),
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-struct CopyModeCols {
+pub struct CopyModeCols {
     from: DBParam,
     to: DBParam,
     col: Vec<ColPair>,
@@ -58,7 +64,7 @@ struct CopyModeCols {
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-struct CopyModeNS {
+pub struct CopyModeNS {
     from: DBParam,
     to: DBParam,
     ns_include: String,
@@ -67,22 +73,19 @@ struct CopyModeNS {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(tag = "mode")]
-enum CopyMode {
-    #[serde(rename = "db")]
-    CopyModeDB(CopyModeDB),
-    #[serde(rename = "cols")]
-    CopyModeCols(CopyModeCols),
-    #[serde(rename = "ns")]
-    CopyModeNS(CopyModeNS),
+#[serde(rename_all = "lowercase", tag = "mode")]
+pub enum CopyMode {
+    DB(CopyModeDB),
+    Cols(CopyModeCols),
+    NS(CopyModeNS),
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
-    extra: Extra,
-    connection: HashMap<String, Connection>,
-    copy: Vec<CopyMode>,
+    pub extra: Extra,
+    pub connection: HashMap<String, Connection>,
+    pub copy: Vec<CopyMode>,
 }
 
 impl Config {
@@ -155,16 +158,39 @@ impl Config {
         }
 
         if let Ok(vv) = serde_yaml::to_string(&cfg) {
-            println!("{}", vv)
+            debug!("Configuration from \"serde_yaml::Value\":\n{}", vv)
         }
 
         let cfg = serde_yaml::from_value(cfg)
             .map_err(|err| error::Error::new(config_path, &err.to_string()))?;
 
         if let Ok(vv) = serde_yaml::to_string(&cfg) {
-            println!("{}", vv)
+            debug!("Configuration from struct \"Config\":\n{}", vv)
         }
 
         Ok(cfg)
+    }
+
+    pub fn mix_args(
+        &mut self,
+        gzip: bool,
+        yes: bool,
+        dump: &Option<String>,
+        restore: &Option<String>,
+    ) {
+        self.extra.gzip |= gzip;
+        self.extra.yes |= yes;
+
+        if let Some(cmd) = dump {
+            self.extra.dump = cmd.clone();
+        } else if self.extra.dump.is_empty() {
+            self.extra.dump = String::from(MONGODUMP_CMD);
+        }
+
+        if let Some(cmd) = restore {
+            self.extra.restore = cmd.clone();
+        } else if self.extra.restore.is_empty() {
+            self.extra.restore = String::from(MONGORESTORE_CMD);
+        }
     }
 }

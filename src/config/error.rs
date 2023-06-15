@@ -18,7 +18,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Load config file \"{}\" error -> {}",
+            r#"Load config file "{}" error -> {}"#,
             self.file_path, self.message
         )
     }
