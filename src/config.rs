@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::fs;
+use std::path::{Path, PathBuf};
 
+use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
@@ -104,21 +106,31 @@ impl Config {
         *val = val_patch;
     }
 
-    fn include_config(cfg: &mut Value, inc_path: &str) -> Result<(), error::Error> {
+    fn include_config(cfg: &mut Value, cfg_dir: &Path, inc_file: &str) -> Result<(), error::Error> {
+        let mut inc_path = PathBuf::new();
+        inc_path.push(cfg_dir);
+        inc_path.push(inc_file);
+
+        let Some(inc_path) = inc_path.to_str() else {
+            return Err(error::Error::new(inc_file, "Invalid config file name"));
+        };
+
+        debug!("Load included config file: {}", inc_path);
+
         let cfg_inc = Self::load_yaml_from_file(inc_path)?;
         Self::patch_yaml_value(cfg, cfg_inc);
         Ok(())
     }
 
-    fn merge_all_config(cfg: &mut Value) -> Result<(), error::Error> {
+    fn merge_all_config(cfg: &mut Value, cfg_dir: &Path) -> Result<(), error::Error> {
         if let Value::Mapping(cfg_map) = cfg {
             if let Some(cfg_include) = cfg_map.remove("include") {
                 match cfg_include {
-                    Value::String(inc_path) => Self::include_config(cfg, &inc_path)?,
-                    Value::Sequence(inc_paths) => {
-                        for inc_path_value in inc_paths {
-                            if let Value::String(inc_path) = inc_path_value {
-                                Self::include_config(cfg, &inc_path)?;
+                    Value::String(inc_file) => Self::include_config(cfg, cfg_dir, &inc_file)?,
+                    Value::Sequence(inc_files) => {
+                        for inc_file_value in inc_files {
+                            if let Value::String(inc_file) = inc_file_value {
+                                Self::include_config(cfg, cfg_dir, &inc_file)?;
                             }
                         }
                     }
@@ -130,6 +142,7 @@ impl Config {
     }
 
     pub fn load(config_path: &str) -> Result<Self, error::Error> {
+        debug!("Load main config file: {}", config_path);
         let mut cfg = Self::load_yaml_from_file(config_path)?;
 
         match cfg {
@@ -137,7 +150,9 @@ impl Config {
             _ => return Err(error::Error::new(config_path, "Configuration is not a map")),
         };
 
-        Self::merge_all_config(&mut cfg)?;
+        if let Some(cfg_dir) = Path::new(config_path).parent() {
+            Self::merge_all_config(&mut cfg, &cfg_dir)?;
+        }
 
         if let Ok(vv) = serde_yaml::to_string(&cfg) {
             println!("{}", vv)

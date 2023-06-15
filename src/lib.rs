@@ -12,7 +12,5 @@ pub fn run() -> Result<(), Error> {
 
     println!("{:#?}", cfg);
 
-    println!("{}, {}", args.config, args.yes);
-
     Ok(())
 }
