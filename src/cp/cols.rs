@@ -9,7 +9,7 @@ use super::error::Error;
 pub struct CopyControlCols {}
 
 impl CopyControlCols {
-    pub fn new(_mode: &CopyModeCols, _conns: &HashMap<String, Connection>) -> Self {
+    pub fn new(_mode: &CopyModeCols) -> Self {
         Self {}
     }
 }

@@ -12,7 +12,7 @@ pub fn run() -> Result<(), Error> {
     let args = arg::parse_arg();
 
     let mut cfg = Config::load(&args.config)?;
-    cfg.mix_args(args.gzip, args.yes, &args.dump, &args.restore);
+    cfg.mix_args(args.gzip, args.drop, args.yes, &args.dump, &args.restore);
 
     debug!("Configuration in struct:\n{:#?}", cfg);
 

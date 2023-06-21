@@ -9,6 +9,10 @@ pub struct Arg {
     #[arg(short, long)]
     pub gzip: bool,
 
+    /// Drop collection before restore
+    #[arg(short, long)]
+    pub drop: bool,
+
     /// Imply yes for all prompt
     #[arg(short, long)]
     pub yes: bool,

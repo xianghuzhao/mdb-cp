@@ -1,30 +1,24 @@
-use std::collections::HashMap;
-
 use crate::config::CopyModeDB;
-use crate::config::Connection;
 
-use super::CopyControlTrait;
 use super::error::Error;
+use super::CopyControlTrait;
 
-pub struct CopyControlDB<'a, 'b> {
+pub struct CopyControlDB<'a> {
     mode: &'a CopyModeDB,
-    conns: &'b HashMap<String, Connection>,
 }
 
-impl<'a, 'b> CopyControlDB<'a, 'b> {
-    pub fn new(mode: &'a CopyModeDB, conns: &'b HashMap<String, Connection>) -> Self {
-        Self {
-            mode,
-            conns,
-        }
+impl<'a> CopyControlDB<'a> {
+    pub fn new(mode: &'a CopyModeDB) -> Self {
+        Self { mode }
     }
 
-    fn generate_cmd_pair_list(&self) -> Vec<(Vec<String>, Vec<String>)> {
+    fn generate_copy_commands(&self) -> Vec<CopyCommand> {
+        let cmd = CopyCommand::new();
         vec![]
     }
 }
 
-impl<'a, 'b> CopyControlTrait for CopyControlDB<'a, 'b> {
+impl<'a> CopyControlTrait for CopyControlDB<'a> {
     fn cp(&self) -> Result<(), Error> {
         let _args = self.generate_cmd_pair_list();
         Ok(())

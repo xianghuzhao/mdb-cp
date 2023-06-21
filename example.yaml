@@ -1,6 +1,8 @@
 include:
 - example-inc.yaml
-#- example-inc2.yaml
+
+param:
+  gzip2: false
 
 connection:
   old:
@@ -11,39 +13,37 @@ connection:
     password: pass
     authdb: admin
 
-extra:
-  gzip2: false
-
 copy:
 - mode: db
-  from:
+  dump:
     conn: old
     db: db_old
-  to:
+    exclude_col:
+    - temp1
+    - temp2
+    exclude_col_prefix:
+    - abc_
+    - def_
+  restore:
     conn: new
-    db: db_new
-  exclude_col:
-  - temp1
-  - temp2
-  exclude_col_prefix:
-  - abc_
-  - def_
+  db: db_new
 - mode: cols
-  from:
+  dump:
     conn: old
     db: db_old
-  to:
+  restore:
     conn: new
-    db: db_new
-  col:
+  db: db_new
+  cols:
   - col_new_1: col1
   - col2
 - mode: ns
-  from:
+  dump:
     conn: old
     db: db_same
-  to:
+  restore:
     conn: new
-#  ns_include: 'data.*'
+  ns_include: 'data.*'
+  ns_exclude: 'data.test*'
   ns_from: 'data.$prefix$_$customer$'
   ns_to: '$customer$.$prefix$'

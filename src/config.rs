@@ -13,38 +13,46 @@ const MONGORESTORE_CMD: &str = "mongorestore";
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-pub struct Extra {
-    gzip: bool,
-    yes: bool,
-    dump: String,
-    restore: String,
+pub struct Param {
+    pub gzip: bool,
+    pub drop: bool,
+    pub yes: bool,
+    pub dump: String,
+    pub restore: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Connection {
-    uri: String,
-    host: String,
-    port: u16,
-    username: String,
-    password: String,
-    authdb: String,
+    pub uri: String,
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub authdb: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-pub struct DBParam {
-    conn: String,
-    db: String,
+pub struct Dump {
+    pub conn: String,
+    pub db: String,
+    pub exclude_col: Vec<String>,
+    pub exclude_col_prefix: Vec<String>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct Restore {
+    pub conn: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct CopyModeDB {
-    from: DBParam,
-    to: DBParam,
-    exclude_col: Vec<String>,
-    exclude_col_prefix: Vec<String>,
+    pub dump: Dump,
+    pub restore: Restore,
+    pub db: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -57,19 +65,20 @@ pub enum ColPair {
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct CopyModeCols {
-    from: DBParam,
-    to: DBParam,
-    col: Vec<ColPair>,
+    pub dump: Dump,
+    pub restore: Restore,
+    pub cols: Vec<ColPair>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct CopyModeNS {
-    from: DBParam,
-    to: DBParam,
-    ns_include: String,
-    ns_from: String,
-    ns_to: String,
+    pub dump: Dump,
+    pub restore: Restore,
+    pub ns_include: String,
+    pub ns_exclude: String,
+    pub ns_from: String,
+    pub ns_to: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -83,7 +92,7 @@ pub enum CopyMode {
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
-    pub extra: Extra,
+    pub param: Param,
     pub connection: HashMap<String, Connection>,
     pub copy: Vec<CopyMode>,
 }
@@ -174,23 +183,25 @@ impl Config {
     pub fn mix_args(
         &mut self,
         gzip: bool,
+        drop: bool,
         yes: bool,
         dump: &Option<String>,
         restore: &Option<String>,
     ) {
-        self.extra.gzip |= gzip;
-        self.extra.yes |= yes;
+        self.param.gzip |= gzip;
+        self.param.drop |= drop;
+        self.param.yes |= yes;
 
         if let Some(cmd) = dump {
-            self.extra.dump = cmd.clone();
-        } else if self.extra.dump.is_empty() {
-            self.extra.dump = String::from(MONGODUMP_CMD);
+            self.param.dump = cmd.clone();
+        } else if self.param.dump.is_empty() {
+            self.param.dump = String::from(MONGODUMP_CMD);
         }
 
         if let Some(cmd) = restore {
-            self.extra.restore = cmd.clone();
-        } else if self.extra.restore.is_empty() {
-            self.extra.restore = String::from(MONGORESTORE_CMD);
+            self.param.restore = cmd.clone();
+        } else if self.param.restore.is_empty() {
+            self.param.restore = String::from(MONGORESTORE_CMD);
         }
     }
 }
