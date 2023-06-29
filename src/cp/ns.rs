@@ -1,21 +1,14 @@
-use std::collections::HashMap;
-
 use crate::config::CopyModeNS;
-use crate::config::Connection;
+use crate::config::{Dump, Restore};
 
 use super::CopyControlTrait;
-use super::error::Error;
 
-pub struct CopyControlNS {}
-
-impl CopyControlNS {
-    pub fn new(_mode: &CopyModeNS) -> Self {
-        Self {}
+impl CopyControlTrait for CopyModeNS {
+    fn get_dump_config(&self) -> &Dump {
+        &self.dump
     }
-}
 
-impl CopyControlTrait for CopyControlNS {
-    fn cp(&self) -> Result<(), Error> {
-        Ok(())
+    fn get_restore_config(&self) -> &Restore {
+        &self.restore
     }
 }

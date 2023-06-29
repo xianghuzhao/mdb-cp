@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
@@ -127,7 +126,7 @@ impl Config {
             return Err(error::Error::new(inc_file, "Invalid config file name"));
         };
 
-        debug!("Load included config file: {}", inc_path);
+        println!("Load included config file: {}", inc_path);
 
         let cfg_inc = Self::load_yaml_from_file(inc_path)?;
         Self::patch_yaml_value(cfg, cfg_inc);
@@ -154,7 +153,7 @@ impl Config {
     }
 
     pub fn load(config_path: &str) -> Result<Self, error::Error> {
-        debug!("Load main config file: {}", config_path);
+        println!("Load main config file: {}", config_path);
         let mut cfg = Self::load_yaml_from_file(config_path)?;
 
         match cfg {
@@ -167,14 +166,14 @@ impl Config {
         }
 
         if let Ok(vv) = serde_yaml::to_string(&cfg) {
-            debug!("Configuration from \"serde_yaml::Value\":\n{}", vv)
+            println!("Configuration from \"serde_yaml::Value\":\n{}", vv)
         }
 
         let cfg = serde_yaml::from_value(cfg)
             .map_err(|err| error::Error::new(config_path, &err.to_string()))?;
 
         if let Ok(vv) = serde_yaml::to_string(&cfg) {
-            debug!("Configuration from struct \"Config\":\n{}", vv)
+            println!("Configuration from struct \"Config\":\n{}", vv)
         }
 
         Ok(cfg)

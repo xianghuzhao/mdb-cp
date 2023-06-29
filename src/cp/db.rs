@@ -1,26 +1,25 @@
 use crate::config::CopyModeDB;
+use crate::config::{Dump, Restore};
 
-use super::error::Error;
 use super::CopyControlTrait;
 
-pub struct CopyControlDB<'a> {
-    mode: &'a CopyModeDB,
-}
-
-impl<'a> CopyControlDB<'a> {
-    pub fn new(mode: &'a CopyModeDB) -> Self {
-        Self { mode }
+impl CopyControlTrait for CopyModeDB {
+    fn get_dump_config(&self) -> &Dump {
+        &self.dump
     }
 
-    fn generate_copy_commands(&self) -> Vec<CopyCommand> {
-        let cmd = CopyCommand::new();
-        vec![]
+    fn get_restore_config(&self) -> &Restore {
+        &self.restore
     }
-}
 
-impl<'a> CopyControlTrait for CopyControlDB<'a> {
-    fn cp(&self) -> Result<(), Error> {
-        let _args = self.generate_cmd_pair_list();
-        Ok(())
+    fn gen_mode_args(&self) -> Vec<(Vec<String>, Vec<String>)> {
+        let mut args = Vec::new();
+        if !self.db.is_empty() {
+            args.push("--nsFrom".to_owned());
+            args.push(format!("{}.*", self.dump.db));
+            args.push("--nsTo".to_owned());
+            args.push(format!("{}.*", self.db));
+        }
+        vec![(vec![], args)]
     }
 }

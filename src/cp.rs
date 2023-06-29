@@ -1,141 +1,107 @@
 use std::collections::HashMap;
+use std::io::Write;
+use std::process::{Command, Stdio};
+
+use crate::config::Config;
+use crate::config::CopyMode;
+use crate::config::{Connection, Param};
+use crate::config::{Dump, Restore};
 
 pub mod error;
 
+mod arg;
+mod cols;
+mod db;
+mod ns;
+
 use error::Error;
 
-use crate::config::Config;
-use crate::config::{Connection, Param};
-use crate::config::{CopyMode, CopyModeCols, CopyModeDB, CopyModeNS};
-use crate::config::{Dump, Restore};
-
-trait CopyControlTrait {
+pub trait CopyControlTrait {
     fn get_dump_config(&self) -> &Dump;
     fn get_restore_config(&self) -> &Restore;
 
-    fn gen_mode_dump_args(&self) -> Vec<String> {
-        vec![]
-    }
-
-    fn gen_mode_restore_args(&self) -> Vec<String> {
+    fn gen_mode_args(&self) -> Vec<(Vec<String>, Vec<String>)> {
         vec![]
     }
 }
 
-impl CopyControlTrait for CopyModeDB {
-    fn get_dump_config(&self) -> &Dump {
-        &self.dump
-    }
-
-    fn get_restore_config(&self) -> &Restore {
-        &self.restore
-    }
-
-    fn gen_mode_restore_args(&self) -> Vec<String> {
-        let mut args = Vec::new();
-        if !self.db.is_empty() {
-            args.push("-d".to_owned());
-            args.push(self.db.clone());
-        }
-        args
-    }
+fn show_cmd(cmd: &str, args: &Vec<String>) {
+    println!("{}: {}", cmd, args.join(" "));
 }
 
-impl CopyControlTrait for CopyModeCols {
-    fn get_dump_config(&self) -> &Dump {
-        &self.dump
+fn run_cp(
+    param: &Param,
+    dump_common_args: &Vec<String>,
+    restore_common_args: &Vec<String>,
+    dump_mode_args: &Vec<String>,
+    restore_mode_args: &Vec<String>,
+) -> Result<(), Error> {
+    let dump_args = dump_common_args
+        .clone()
+        .into_iter()
+        .chain(dump_mode_args.clone().into_iter())
+        .collect();
+    let restore_args = restore_common_args
+        .clone()
+        .into_iter()
+        .chain(restore_mode_args.clone().into_iter())
+        .collect();
+
+    show_cmd(&param.dump, &dump_args);
+    show_cmd(&param.restore, &restore_args);
+
+    print!("Confirm copy? (y/n) ");
+    std::io::stdout()
+        .flush()
+        .map_err(|err| Error::new(&format!("Flush stdout error -> {}", err)))?;
+
+    let mut confirm_input = String::new();
+    std::io::stdin()
+        .read_line(&mut confirm_input)
+        .map_err(|err| Error::new(&format!("Read user input error -> {}", err)))?;
+
+    let confirm_input = confirm_input.trim();
+    let confirm = confirm_input == "y" || confirm_input == "Y";
+    if !confirm {
+        return Ok(());
     }
 
-    fn get_restore_config(&self) -> &Restore {
-        &self.restore
-    }
-}
+    let dump_cmd = Command::new(&param.dump)
+        .args(&dump_args)
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|err| Error::new(&format!("Dump command error -> {}", err)))?;
 
-impl CopyControlTrait for CopyModeNS {
-    fn get_dump_config(&self) -> &Dump {
-        &self.dump
-    }
+    let mut restore_cmd = Command::new(&param.restore)
+        .args(&restore_args)
+        .stdin(dump_cmd.stdout.unwrap())
+        .spawn()
+        .map_err(|err| Error::new(&format!("Restore command error -> {}", err)))?;
 
-    fn get_restore_config(&self) -> &Restore {
-        &self.restore
-    }
-}
+    restore_cmd
+        .wait()
+        .map_err(|err| Error::new(&format!("Wait error -> {}", err)))?;
 
-fn gen_conn_args(conn: &Connection) -> Vec<String> {
-    if !conn.uri.is_empty() {
-        return vec!["--uri".to_owned(), conn.uri.clone()];
-    }
-
-    let mut args = Vec::new();
-
-    if !conn.host.is_empty() {
-        args.push("--host".to_owned());
-        args.push(conn.host.clone());
-    }
-    if conn.port != 0 {
-        args.push("--port".to_owned());
-        args.push(conn.port.to_string());
-    }
-
-    args
-}
-
-fn gen_dump_args(dump: &Dump, conns: &HashMap<String, Connection>) -> Result<Vec<String>, Error> {
-    let Some(conn) = conns.get(&dump.conn) else {
-        return Err(Error::new(&format!(r#"Dump connection "{}" not found"#, &dump.conn)));
-    };
-
-    let mut args = gen_conn_args(conn);
-
-    if !dump.db.is_empty() {
-        args.push("--db".to_owned());
-        args.push(dump.db.clone());
-    }
-
-    for ex_col in &dump.exclude_col {
-        args.push("--excludeCollection".to_owned());
-        args.push(ex_col.clone());
-    }
-    for ex_col_prefix in &dump.exclude_col_prefix {
-        args.push("--excludeCollectionsWithPrefix".to_owned());
-        args.push(ex_col_prefix.clone());
-    }
-
-    Ok(args)
-}
-
-fn gen_restore_args(restore: &Restore, conns: &HashMap<String, Connection>) -> Result<Vec<String>, Error> {
-    let Some(conn) = conns.get(&restore.conn) else {
-        return Err(Error::new(&format!(r#"Dump connection "{}" not found"#, &restore.conn)));
-    };
-
-    Ok(gen_conn_args(conn))
+    Ok(())
 }
 
 fn cp<T>(mode: &T, param: &Param, conns: &HashMap<String, Connection>) -> Result<(), Error>
 where
     T: CopyControlTrait,
 {
-    let dump = mode.get_dump_config();
-    let mut dump_args = gen_dump_args(dump, conns)?;
+    let dump_common_args = arg::gen_dump_common_args(mode, param, conns)?;
+    let restore_common_args = arg::gen_restore_common_args(mode, param, conns)?;
 
-    let restore = mode.get_restore_config();
-    let mut restore_args = gen_restore_args(restore, conns)?;
+    for mode_args in mode.gen_mode_args() {
+        run_cp(
+            param,
+            &dump_common_args,
+            &restore_common_args,
+            &mode_args.0,
+            &mode_args.1,
+        )?;
+    }
 
-
-    Ok(())
-}
-
-fn run_one_copy(
-    cp_mode: &CopyMode,
-    param: &Param,
-    conns: &HashMap<String, Connection>,
-) -> Result<(), Error> {
-    match cp_mode {
-        CopyMode::DB(mode) => cp(mode, param, conns),
-        CopyMode::Cols(mode) => cp(mode, param, conns),
-        CopyMode::NS(mode) => cp(mode, param, conns),
-    };
     Ok(())
 }
 
@@ -144,7 +110,11 @@ pub fn do_copy(cfg: &Config) -> Result<(), Error> {
     let conns = &cfg.connection;
 
     for cp_mode in &cfg.copy {
-        run_one_copy(&cp_mode, &param, &conns)?
+        match cp_mode {
+            CopyMode::DB(mode) => cp(mode, param, conns)?,
+            CopyMode::Cols(mode) => cp(mode, param, conns)?,
+            CopyMode::NS(mode) => cp(mode, param, conns)?,
+        };
     }
 
     Ok(())

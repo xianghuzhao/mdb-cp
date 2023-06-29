@@ -1,5 +1,3 @@
-use log::debug;
-
 mod arg;
 mod config;
 mod cp;
@@ -14,7 +12,7 @@ pub fn run() -> Result<(), Error> {
     let mut cfg = Config::load(&args.config)?;
     cfg.mix_args(args.gzip, args.drop, args.yes, &args.dump, &args.restore);
 
-    debug!("Configuration in struct:\n{:#?}", cfg);
+    println!("Configuration in struct:\n{:#?}", cfg);
 
     cp::do_copy(&cfg)?;
 
