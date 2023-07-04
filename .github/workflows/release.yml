@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install Rust
         shell: bash
-        run: ./.github/workflows/install-rust.sh stable ${{ matrix.target }}
+        run: ./.github/workflows/install-rust.sh ${{ matrix.target }}
       - name: Build
         shell: bash
         run: cargo build --release --target=${{ matrix.target }}
