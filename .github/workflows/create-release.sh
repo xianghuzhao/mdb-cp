@@ -9,5 +9,6 @@ then
 fi
 
 tag="$1"
+version=$(echo $tag | sed 's/^v*//')
 
-awk "/^## ${tag}$/{ f = 1; next } /^## /{ f = 0 } f" CHANGELOG.md | gh release create "${tag}" --notes-file -
+awk "/^## ${version}$/{ f = 1; next } /^## /{ f = 0 } f" CHANGELOG.md | gh release create "${tag}" --notes-file -
