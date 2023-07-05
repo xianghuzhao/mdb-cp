@@ -8,6 +8,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  MDB_CP_REF_NAME: ${{github.ref_name}}
 
 defaults:
   run:
@@ -19,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Create Release
-        run: ./.github/workflows/create-release.sh ${{github.ref_name}}
+        run: ./.github/workflows/create-release.sh
 
   linux:
     needs: create_release
@@ -29,15 +30,15 @@ jobs:
       - name: Install gcc-aarch64-linux-gnu
         run: sudo apt-get install -y gcc-aarch64-linux-gnu
       - name: Release linux x86_64 gnu
-        run: ./.github/workflows/build-release.sh x86_64-unknown-linux-gnu
+        run: ./.github/workflows/build-and_upload.sh x86_64-unknown-linux-gnu
       - name: Release linux x86_64 musl
-        run: ./.github/workflows/build-release.sh x86_64-unknown-linux-musl
+        run: ./.github/workflows/build-and_upload.sh x86_64-unknown-linux-musl
       - name: Release linux i686 musl
-        run: ./.github/workflows/build-release.sh i686-unknown-linux-musl
+        run: ./.github/workflows/build-and_upload.sh i686-unknown-linux-musl
       - name: Release linux aarch64 musl
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
-        run: ./.github/workflows/build-release.sh aarch64-unknown-linux-musl
+        run: ./.github/workflows/build-and_upload.sh aarch64-unknown-linux-musl
 
   windows:
     needs: create_release
@@ -45,9 +46,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Release windows x86_64
-        run: ./.github/workflows/build-release.sh x86_64-pc-windows-msvc
+        run: ./.github/workflows/build-and_upload.sh x86_64-pc-windows-msvc
       - name: Release windows i686
-        run: ./.github/workflows/build-release.sh i686-pc-windows-msvc
+        run: ./.github/workflows/build-and_upload.sh i686-pc-windows-msvc
 
   macos:
     needs: create_release
@@ -55,6 +56,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Release macos x86_64
-        run: ./.github/workflows/build-release.sh x86_64-apple-darwin
+        run: ./.github/workflows/build-and_upload.sh x86_64-apple-darwin
       - name: Release macos aarch64
-        run: ./.github/workflows/build-release.sh aarch64-apple-darwin
+        run: ./.github/workflows/build-and_upload.sh aarch64-apple-darwin
