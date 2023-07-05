@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install gcc-aarch64-linux-gnu
+        run: sudo apt-get install -y gcc-aarch64-linux-gnu
       - name: Release linux x86_64 gnu
         run: ./.github/workflows/release.sh x86_64-unknown-linux-gnu
       - name: Release linux x86_64 musl
