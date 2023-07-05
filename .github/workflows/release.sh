@@ -1,5 +1,7 @@
 #!/bin/sh
 
+cd $(dirname "$0")
+
 set -ex
 
 if [ -z "$1" ]
@@ -10,8 +12,8 @@ fi
 
 target="$1"
 
-rustup target install "$target"
+./install-rust.sh "$target"
 
-rustup -V
-rustc -Vv
-cargo -V
+./build.sh "$target"
+
+gh release list
