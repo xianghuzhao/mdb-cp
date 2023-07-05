@@ -15,3 +15,7 @@ rustup target install "$target"
 rustup -V
 rustc -Vv
 cargo -V
+
+cargo build --release --target="${target}"
+
+gh release list
