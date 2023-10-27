@@ -21,6 +21,18 @@ fn gen_conn_args(conn: &Connection) -> Vec<String> {
         args.push("--port".to_owned());
         args.push(conn.port.to_string());
     }
+    if !conn.username.is_empty() {
+        args.push("--username".to_owned());
+        args.push(conn.username.clone());
+    }
+    if !conn.password.is_empty() {
+        args.push("--password".to_owned());
+        args.push(conn.password.clone());
+    }
+    if !conn.authdb.is_empty() {
+        args.push("--authenticationDatabase".to_owned());
+        args.push(conn.authdb.clone());
+    }
 
     args
 }
